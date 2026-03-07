@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dólar VE">
+<meta name="theme-color" content="#0a0f1e">
+<title>Dólar Venezuela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #080d1a;
+    --surface: #0f1729;
+    --border: #1e2d4a;
+    --bcv-color: #00e5a0;
+    --par-color: #ff6b35;
+    --text: #e8edf5;
+    --muted: #556070;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+  .header { text-align: center; margin-bottom: 28px; animation: fadeDown 0.6s ease both; }
+  .header .flag { font-size: 28px; margin-bottom: 8px; }
+  .header h1 { font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; }
+  .status-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+  .status-dot.live { background: var(--bcv-color); box-shadow: 0 0 8px var(--bcv-color); animation: pulse 2s infinite; }
+  .status-dot.error { background: var(--par-color); }
+  .status-dot.fetching { background: #c9a227; animation: pulse 0.8s infinite; }
+
+  .rates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .rate-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 16px; position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both; transition: transform 0.2s ease;
+  }
+  .rate-card:active { transform: scale(0.97); }
+  .rate-card.bcv { animation-delay: 0.15s; box-shadow: 0 0 40px rgba(0,229,160,0.07); border-color: rgba(0,229,160,0.15); }
+  .rate-card.paralelo { animation-delay: 0.25s; box-shadow: 0 0 40px rgba(255,107,53,0.07); border-color: rgba(255,107,53,0.15); }
+  .rate-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .rate-card.bcv::before { background: linear-gradient(90deg, transparent, var(--bcv-color), transparent); }
+  .rate-card.paralelo::before { background: linear-gradient(90deg, transparent, var(--par-color), transparent); }
+  .card-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-family: 'Space Mono', monospace; margin-bottom: 10px; }
+  .bcv .card-label { color: var(--bcv-color); }
+  .paralelo .card-label { color: var(--par-color); }
+  .card-source { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 8px; display: block; }
+  .rate-value { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; transition: all 0.3s ease; }
+  .rate-value.skeleton { opacity: 0.2; animation: shimmer 1.5s infinite; }
+  .bcv .rate-value { color: var(--bcv-color); }
+  .paralelo .rate-value { color: var(--par-color); }
+  .rate-currency { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 4px; }
+  .rate-date { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 10px; opacity: 0.6; }
+
+  .spread-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px 16px; display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; animation: fadeUp 0.5s 0.3s ease both;
+  }
+  .spread-label { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; }
+  .spread-value { font-size: 14px; font-weight: 700; font-family: 'Space Mono', monospace; color: #c9a227; }
+
+  .converter { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px 20px; animation: fadeUp 0.5s 0.35s ease both; }
+  .converter-title { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 18px; }
+  .mode-selector { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 3px; margin-bottom: 16px; }
+  .mode-btn { flex: 1; padding: 9px; border: none; border-radius: 8px; background: transparent; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+  .mode-btn.active { background: var(--surface); border: 1px solid var(--border); }
+  .mode-btn.bcv-mode.active { color: var(--bcv-color); }
+  .mode-btn.par-mode.active { color: var(--par-color); }
+  .conv-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .input-group { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+  .input-group:focus-within { border-color: rgba(0,229,160,0.35); }
+  .input-currency { padding: 14px; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; min-width: 52px; text-align: center; border-right: 1px solid var(--border); }
+  .input-currency.usd { color: var(--bcv-color); }
+  .input-currency.ves { color: var(--par-color); }
+  .conv-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 18px; font-family: 'Space Mono', monospace; font-weight: 700; padding: 14px 16px; width: 100%; }
+  .conv-input::placeholder { color: var(--muted); font-weight: 400; }
+  .swap-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 11px; background: transparent; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+  .swap-btn:active { transform: scale(0.97); color: var(--text); }
+
+  .action-bar { display: flex; gap: 10px; margin-top: 20px; animation: fadeUp 0.5s 0.45s ease both; }
+  .refresh-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; background: transparent; border: 1px solid var(--border); border-radius: 14px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; }
+  .refresh-btn:hover { border-color: var(--bcv-color); color: var(--bcv-color); }
+  .refresh-btn:active { transform: scale(0.98); }
+  .refresh-btn.spinning .icon { animation: spin 0.8s linear infinite; }
+  .source-tag { display: inline-flex; align-items: center; gap: 6px; padding: 15px 14px; background: transparent; border: 1px solid var(--border); border-radius: 14px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .ai-dot { width: 5px; height: 5px; border-radius: 50%; background: #7c5cbf; }
+
+  .notice { border-radius: 10px; padding: 12px 16px; font-family: 'Space Mono', monospace; font-size: 11px; text-align: center; margin-bottom: 14px; display: none; line-height: 1.7; }
+  .notice.show { display: block; }
+  .notice.info { background: rgba(0,229,160,0.05); border: 1px solid rgba(0,229,160,0.12); color: var(--bcv-color); }
+  .notice.err { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); color: var(--par-color); }
+
+  .footer { text-align: center; margin-top: 24px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); opacity: 0.5; line-height: 1.7; animation: fadeUp 0.5s 0.5s ease both; }
+
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes shimmer { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.5; } }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.15; } 100% { opacity: 1; } }
+  .flash { animation: flash 0.4s ease; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="flag">🇻🇪</div>
+    <h1>Monitor de Divisas · Venezuela</h1>
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Iniciando...</span>
+    </div>
+  </div>
+
+  <div class="notice info" id="infoNotice"></div>
+  <div class="notice err"  id="errNotice"></div>
+
+  <div class="rates-grid">
+    <div class="rate-card bcv">
+      <div class="card-label">BCV</div>
+      <span class="card-source">Oficial</span>
+      <div class="rate-value skeleton" id="bcvRate">——</div>
+      <div class="rate-currency">Bs / USD</div>
+      <div class="rate-date" id="bcvDate"></div>
+    </div>
+    <div class="rate-card paralelo">
+      <div class="card-label">Paralelo</div>
+      <span class="card-source">Libre</span>
+      <div class="rate-value skeleton" id="parRate">——</div>
+      <div class="rate-currency">Bs / USD</div>
+      <div class="rate-date" id="parDate"></div>
+    </div>
+  </div>
+
+  <div class="spread-card">
+    <span class="spread-label">Brecha</span>
+    <span class="spread-value" id="spreadValue">—</span>
+  </div>
+
+  <div class="converter">
+    <div class="converter-title">↔ Convertidor</div>
+    <div class="mode-selector">
+      <button class="mode-btn bcv-mode active" id="btnBcv" onclick="setMode('bcv')">BCV</button>
+      <button class="mode-btn par-mode"         id="btnPar" onclick="setMode('paralelo')">Paralelo</button>
+    </div>
+    <div class="conv-row">
+      <div class="input-group">
+        <div class="input-currency usd">USD</div>
+        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('usd')">
+      </div>
+      <div class="input-group">
+        <div class="input-currency ves">VES</div>
+        <input class="conv-input" id="vesInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('ves')">
+      </div>
+    </div>
+    <button class="swap-btn" onclick="swapValues()">⇅ Intercambiar</button>
+  </div>
+
+  <div class="action-bar">
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchRates()">
+      <span class="icon">↻</span> Actualizar
+    </button>
+    <div class="source-tag"><div class="ai-dot"></div> IA + API</div>
+  </div>
+
+  <div class="footer">
+    Fuente: bcv.org.ve · ve.dolarapi.com<br>
+    Respaldo automático via Claude AI
+  </div>
+
+</div>
+
+<script>
+  let rates   = { bcv: null, paralelo: null };
+  let mode    = 'bcv';
+  let lastUsd = null;
+
+  // ── Orquestador principal ─────────────────────────────────────────────────────
+  async function fetchRates() {
+    setUI('fetching', 'Consultando tasas...');
+    setSkeleton(true);
+    hideNotices();
+
+    try {
+      // 1) Intentar APIs directas (funcionan bien desde browser/iPhone)
+      const direct = await tryDirectAPIs();
+      if (direct) {
+        applyRates(direct);
+        setUI('live', `Actualizado ${nowTime()}`);
+        showInfo(`Fuente: ${direct.source}`);
+        return;
+      }
+
+      // 2) Fallback: Claude AI con web search
+      showInfo('⏳ APIs directas no disponibles, consultando via IA...');
+      const ai = await fetchViaAI();
+      if (ai) {
+        applyRates(ai);
+        setUI('live', `Actualizado ${nowTime()} · IA`);
+        showInfo(`Fuente: Claude AI (web search)`);
+        return;
+      }
+
+      throw new Error('Todas las fuentes fallaron');
+
+    } catch (e) {
+      setUI('error', 'Error de conexión');
+      showErr('⚠ No se pudo obtener la tasa.\nVerifica tu conexión e intenta de nuevo.');
+      console.error(e);
+    } finally {
+      setSkeleton(false);
+      document.getElementById('refreshBtn').classList.remove('spinning');
+    }
+  }
+
+  // ── APIs directas ─────────────────────────────────────────────────────────────
+  async function tryDirectAPIs() {
+    // ve.dolarapi.com
+    try {
+      const sig = AbortSignal.timeout(7000);
+      const [r1, r2] = await Promise.all([
+        fetch('https://ve.dolarapi.com/v1/dolares/oficial',   { signal: sig }),
+        fetch('https://ve.dolarapi.com/v1/dolares/paralelo',  { signal: sig }),
+      ]);
+      if (r1.ok && r2.ok) {
+        const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+        const bcv = parseFloat(d1.promedio ?? d1.venta ?? d1.precio);
+        const par = parseFloat(d2.promedio ?? d2.venta ?? d2.precio);
+        if (bcv && par) return {
+          bcv, paralelo: par,
+          bcvDate: d1.fechaActualizacion, parDate: d2.fechaActualizacion,
+          source: 've.dolarapi.com'
+        };
+      }
+    } catch(e) { console.log('ve.dolarapi.com fail:', e.message); }
+
+    // pydolarve.org
+    try {
+      const sig = AbortSignal.timeout(7000);
+      const r = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv', { signal: sig });
+      if (r.ok) {
+        const d = await r.json();
+        const usdMon = d.monitors?.usd ?? d.monitors?.USD;
+        if (usdMon?.price) {
+          // Intentar también paralelo
+          let par = null, parDate = null;
+          try {
+            const rp = await fetch('https://pydolarve.org/api/v1/dollar?page=enparalelovzla', { signal: AbortSignal.timeout(5000) });
+            if (rp.ok) {
+              const dp = await rp.json();
+              const pm = dp.monitors?.enparalelovzla ?? Object.values(dp.monitors ?? {})[0];
+              par     = pm?.price ? parseFloat(pm.price) : null;
+              parDate = pm?.last_update ?? null;
+            }
+          } catch(_) {}
+          return {
+            bcv: parseFloat(usdMon.price), paralelo: par,
+            bcvDate: usdMon.last_update, parDate,
+            source: 'pydolarve.org'
+          };
+        }
+      }
+    } catch(e) { console.log('pydolarve.org fail:', e.message); }
+
+    return null;
+  }
+
+  // ── Claude AI como fallback ────────────────────────────────────────────────────
+  async function fetchViaAI() {
+    const today = new Date().toISOString().slice(0,10);
+    const prompt = `Usa web search para buscar las tasas de cambio USD a VES en Venezuela para HOY ${today}.
+Busca específicamente:
+1. Tasa oficial BCV (Banco Central de Venezuela)
+2. Tasa dólar paralelo o libre
+
+Responde SOLO con un JSON, sin texto adicional, sin backticks:
+{"bcv":36.50,"paralelo":40.20,"bcvDate":"${today}","parDate":"${today}"}
+
+Los valores deben ser números. Si no encuentras alguno usa null.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`Claude API ${res.status}`);
+    const data = await res.json();
+
+    const text = (data.content ?? []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const m = text.match(/\{[^{}]+\}/);
+    if (!m) throw new Error('No JSON in AI response');
+
+    const p = JSON.parse(m[0]);
+    if (!p.bcv) throw new Error('No BCV rate in AI response');
+
+    return {
+      bcv: parseFloat(p.bcv),
+      paralelo: p.paralelo ? parseFloat(p.paralelo) : null,
+      bcvDate: p.bcvDate ?? today,
+      parDate: p.parDate ?? today,
+      source: 'Claude AI'
+    };
+  }
+
+  // ── Helpers de UI ─────────────────────────────────────────────────────────────
+  function applyRates(data) {
+    rates.bcv      = data.bcv;
+    rates.paralelo = data.paralelo;
+
+    setRateCard('bcvRate', 'bcvDate', data.bcv, data.bcvDate);
+    setRateCard('parRate', 'parDate', data.paralelo, data.parDate);
+    updateSpread();
+
+    if (lastUsd !== null) {
+      document.getElementById('usdInput').value = lastUsd;
+      convertFrom('usd');
+    }
+  }
+
+  function setRateCard(rateId, dateId, value, dateRaw) {
+    const el = document.getElementById(rateId);
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 400);
+    el.textContent = value
+      ? parseFloat(value).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : 'N/D';
+
+    if (dateRaw) {
+      try {
+        const d = new Date(dateRaw);
+        document.getElementById(dateId).textContent = isNaN(d.getTime())
+          ? dateRaw
+          : d.toLocaleDateString('es-VE', { day:'2-digit', month:'short', year:'numeric' });
+      } catch { document.getElementById(dateId).textContent = dateRaw; }
+    }
+  }
+
+  function updateSpread() {
+    const el = document.getElementById('spreadValue');
+    if (rates.bcv && rates.paralelo) {
+      const pct = ((rates.paralelo - rates.bcv) / rates.bcv * 100).toFixed(1);
+      el.textContent = `+${pct}%`;
+    } else {
+      el.textContent = '—';
+    }
+  }
+
+  function setSkeleton(on) {
+    ['bcvRate','parRate'].forEach(id => document.getElementById(id).classList.toggle('skeleton', on));
+  }
+
+  function setUI(state, text) {
+    const dot = document.getElementById('statusDot');
+    document.getElementById('statusText').textContent = text;
+    dot.className = `status-dot ${state === 'live' ? 'live' : state === 'error' ? 'error' : 'fetching'}`;
+    document.getElementById('refreshBtn').classList.toggle('spinning', state === 'fetching');
+  }
+
+  function showInfo(msg) {
+    const el = document.getElementById('infoNotice');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+  }
+  function showErr(msg) {
+    const el = document.getElementById('errNotice');
+    el.textContent = msg; el.classList.add('show');
+  }
+  function hideNotices() {
+    document.getElementById('infoNotice').classList.remove('show');
+    document.getElementById('errNotice').classList.remove('show');
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btnBcv').classList.toggle('active', m === 'bcv');
+    document.getElementById('btnPar').classList.toggle('active', m === 'paralelo');
+    if (document.getElementById('usdInput').value) convertFrom('usd');
+  }
+
+  function convertFrom(from) {
+    const rate = mode === 'bcv' ? rates.bcv : rates.paralelo;
+    if (!rate) return;
+    if (from === 'usd') {
+      const usd = parseFloat(document.getElementById('usdInput').value);
+      lastUsd = isNaN(usd) ? null : usd;
+      document.getElementById('vesInput').value = isNaN(usd) ? '' : (usd * rate).toFixed(2);
+    } else {
+      const ves = parseFloat(document.getElementById('vesInput').value);
+      const usd = isNaN(ves) ? '' : (ves / rate).toFixed(6);
+      document.getElementById('usdInput').value = usd;
+      lastUsd = isNaN(ves) ? null : parseFloat(usd);
+    }
+  }
+
+  function swapValues() {
+    const u = document.getElementById('usdInput');
+    const v = document.getElementById('vesInput');
+    [u.value, v.value] = [v.value, u.value];
+    if (u.value) convertFrom('usd');
+  }
+
+  function nowTime() {
+    return new Date().toLocaleTimeString('es-VE', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  // Init
+  fetchRates();
+  setInterval(fetchRates, 15 * 60 * 1000);
+</script>
+
+</body>
+</html>
