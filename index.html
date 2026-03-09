@@ -18,6 +18,7 @@
     --border: #1e2d4a;
     --bcv-color: #00e5a0;
     --par-color: #ff6b35;
+    --eur-color: #5b9cf6;
     --text: #e8edf5;
     --muted: #556070;
   }
@@ -56,7 +57,7 @@
   .status-dot.error { background: var(--par-color); }
   .status-dot.fetching { background: #c9a227; animation: pulse 0.8s infinite; }
 
-  .rates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .rates-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .rate-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
     padding: 20px 16px; position: relative; overflow: hidden;
@@ -65,17 +66,21 @@
   .rate-card:active { transform: scale(0.97); }
   .rate-card.bcv { animation-delay: 0.15s; box-shadow: 0 0 40px rgba(0,229,160,0.07); border-color: rgba(0,229,160,0.15); }
   .rate-card.paralelo { animation-delay: 0.25s; box-shadow: 0 0 40px rgba(255,107,53,0.07); border-color: rgba(255,107,53,0.15); }
+  .rate-card.euro { animation-delay: 0.35s; box-shadow: 0 0 40px rgba(91,156,246,0.07); border-color: rgba(91,156,246,0.15); }
   .rate-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .rate-card.bcv::before { background: linear-gradient(90deg, transparent, var(--bcv-color), transparent); }
   .rate-card.paralelo::before { background: linear-gradient(90deg, transparent, var(--par-color), transparent); }
+  .rate-card.euro::before { background: linear-gradient(90deg, transparent, var(--eur-color), transparent); }
   .card-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-family: 'Space Mono', monospace; margin-bottom: 10px; }
   .bcv .card-label { color: var(--bcv-color); }
   .paralelo .card-label { color: var(--par-color); }
+  .euro .card-label { color: var(--eur-color); }
   .card-source { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 8px; display: block; }
-  .rate-value { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; transition: all 0.3s ease; }
+  .rate-value { font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; transition: all 0.3s ease; }
   .rate-value.skeleton { opacity: 0.2; animation: shimmer 1.5s infinite; }
   .bcv .rate-value { color: var(--bcv-color); }
   .paralelo .rate-value { color: var(--par-color); }
+  .euro .rate-value { color: var(--eur-color); }
   .rate-currency { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 4px; }
   .rate-date { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 10px; opacity: 0.6; }
 
@@ -94,6 +99,7 @@
   .mode-btn.active { background: var(--surface); border: 1px solid var(--border); }
   .mode-btn.bcv-mode.active { color: var(--bcv-color); }
   .mode-btn.par-mode.active { color: var(--par-color); }
+  .mode-btn.eur-mode.active { color: var(--eur-color); }
   .conv-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
   .input-group { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
   .input-group:focus-within { border-color: rgba(0,229,160,0.35); }
@@ -153,29 +159,37 @@
       <div class="rate-date" id="bcvDate"></div>
     </div>
     <div class="rate-card paralelo">
-      <div class="card-label">Paralelo</div>
-      <span class="card-source">Libre</span>
+      <div class="card-label">USDT</div>
+      <span class="card-source">Cripto / Libre</span>
       <div class="rate-value skeleton" id="parRate">——</div>
-      <div class="rate-currency">Bs / USD</div>
+      <div class="rate-currency">Bs / USDT</div>
       <div class="rate-date" id="parDate"></div>
+    </div>
+    <div class="rate-card euro">
+      <div class="card-label">EUR</div>
+      <span class="card-source">Oficial BCV</span>
+      <div class="rate-value skeleton" id="eurRate">——</div>
+      <div class="rate-currency">Bs / EUR</div>
+      <div class="rate-date" id="eurDate"></div>
     </div>
   </div>
 
   <div class="spread-card">
-    <span class="spread-label">Brecha</span>
+    <span class="spread-label">Brecha BCV / USDT</span>
     <span class="spread-value" id="spreadValue">—</span>
   </div>
 
   <div class="converter">
     <div class="converter-title">↔ Convertidor</div>
     <div class="mode-selector">
-      <button class="mode-btn bcv-mode active" id="btnBcv" onclick="setMode('bcv')">BCV</button>
-      <button class="mode-btn par-mode"         id="btnPar" onclick="setMode('paralelo')">Paralelo</button>
+      <button class="mode-btn bcv-mode active" id="btnBcv"  onclick="setMode('bcv')">BCV</button>
+      <button class="mode-btn par-mode"         id="btnPar"  onclick="setMode('usdt')">USDT</button>
+      <button class="mode-btn eur-mode"         id="btnEur"  onclick="setMode('eur')">EUR</button>
     </div>
     <div class="conv-row">
       <div class="input-group">
-        <div class="input-currency usd">USD</div>
-        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('usd')">
+        <div class="input-currency usd" id="convFromLabel">USD</div>
+        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('foreign')">
       </div>
       <div class="input-group">
         <div class="input-currency ves">VES</div>
@@ -201,9 +215,9 @@
 </div>
 
 <script>
-  let rates   = { bcv: null, paralelo: null };
+  let rates   = { bcv: null, usdt: null, eur: null };
   let mode    = 'bcv';
-  let lastUsd = null;
+  let lastForeign = null;
 
   // ── Orquestador principal ─────────────────────────────────────────────────────
   async function fetchRates() {
@@ -212,7 +226,6 @@
     hideNotices();
 
     try {
-      // 1) Intentar APIs directas (funcionan bien desde browser/iPhone)
       const direct = await tryDirectAPIs();
       if (direct) {
         applyRates(direct);
@@ -221,7 +234,6 @@
         return;
       }
 
-      // 2) Fallback: Claude AI con web search
       showInfo('⏳ APIs directas no disponibles, consultando via IA...');
       const ai = await fetchViaAI();
       if (ai) {
@@ -248,17 +260,21 @@
     // ve.dolarapi.com
     try {
       const sig = AbortSignal.timeout(7000);
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         fetch('https://ve.dolarapi.com/v1/dolares/oficial',   { signal: sig }),
         fetch('https://ve.dolarapi.com/v1/dolares/paralelo',  { signal: sig }),
+        fetch('https://ve.dolarapi.com/v1/euros/oficial',     { signal: sig }),
       ]);
-      if (r1.ok && r2.ok) {
-        const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
-        const bcv = parseFloat(d1.promedio ?? d1.venta ?? d1.precio);
-        const par = parseFloat(d2.promedio ?? d2.venta ?? d2.precio);
-        if (bcv && par) return {
-          bcv, paralelo: par,
-          bcvDate: d1.fechaActualizacion, parDate: d2.fechaActualizacion,
+      if (r1.ok && r2.ok && r3.ok) {
+        const [d1, d2, d3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+        const bcv  = parseFloat(d1.promedio ?? d1.venta ?? d1.precio);
+        const usdt = parseFloat(d2.promedio ?? d2.venta ?? d2.precio);
+        const eur  = parseFloat(d3.promedio ?? d3.venta ?? d3.precio);
+        if (bcv && usdt) return {
+          bcv, usdt, eur: eur || null,
+          bcvDate: d1.fechaActualizacion,
+          usdtDate: d2.fechaActualizacion,
+          eurDate: d3.fechaActualizacion,
           source: 've.dolarapi.com'
         };
       }
@@ -271,21 +287,21 @@
       if (r.ok) {
         const d = await r.json();
         const usdMon = d.monitors?.usd ?? d.monitors?.USD;
+        const eurMon = d.monitors?.eur ?? d.monitors?.EUR;
         if (usdMon?.price) {
-          // Intentar también paralelo
-          let par = null, parDate = null;
+          let usdt = null, usdtDate = null;
           try {
             const rp = await fetch('https://pydolarve.org/api/v1/dollar?page=enparalelovzla', { signal: AbortSignal.timeout(5000) });
             if (rp.ok) {
               const dp = await rp.json();
               const pm = dp.monitors?.enparalelovzla ?? Object.values(dp.monitors ?? {})[0];
-              par     = pm?.price ? parseFloat(pm.price) : null;
-              parDate = pm?.last_update ?? null;
+              usdt     = pm?.price ? parseFloat(pm.price) : null;
+              usdtDate = pm?.last_update ?? null;
             }
           } catch(_) {}
           return {
-            bcv: parseFloat(usdMon.price), paralelo: par,
-            bcvDate: usdMon.last_update, parDate,
+            bcv: parseFloat(usdMon.price), usdt, eur: eurMon?.price ? parseFloat(eurMon.price) : null,
+            bcvDate: usdMon.last_update, usdtDate, eurDate: eurMon?.last_update ?? null,
             source: 'pydolarve.org'
           };
         }
@@ -298,13 +314,14 @@
   // ── Claude AI como fallback ────────────────────────────────────────────────────
   async function fetchViaAI() {
     const today = new Date().toISOString().slice(0,10);
-    const prompt = `Usa web search para buscar las tasas de cambio USD a VES en Venezuela para HOY ${today}.
-Busca específicamente:
-1. Tasa oficial BCV (Banco Central de Venezuela)
-2. Tasa dólar paralelo o libre
+    const prompt = `Usa web search para buscar las tasas de cambio en Venezuela HOY ${today}.
+Necesito:
+1. Tasa oficial BCV USD a Bolívares
+2. Tasa USDT/dólar paralelo a Bolívares
+3. Tasa oficial BCV EUR (Euro) a Bolívares
 
-Responde SOLO con un JSON, sin texto adicional, sin backticks:
-{"bcv":36.50,"paralelo":40.20,"bcvDate":"${today}","parDate":"${today}"}
+Responde SOLO con un JSON sin texto adicional ni backticks:
+{"bcv":36.50,"usdt":40.20,"eur":39.10,"bcvDate":"${today}","usdtDate":"${today}","eurDate":"${today}"}
 
 Los valores deben ser números. Si no encuentras alguno usa null.`;
 
@@ -330,26 +347,30 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
     if (!p.bcv) throw new Error('No BCV rate in AI response');
 
     return {
-      bcv: parseFloat(p.bcv),
-      paralelo: p.paralelo ? parseFloat(p.paralelo) : null,
-      bcvDate: p.bcvDate ?? today,
-      parDate: p.parDate ?? today,
+      bcv:  parseFloat(p.bcv),
+      usdt: p.usdt ? parseFloat(p.usdt) : null,
+      eur:  p.eur  ? parseFloat(p.eur)  : null,
+      bcvDate:  p.bcvDate  ?? today,
+      usdtDate: p.usdtDate ?? today,
+      eurDate:  p.eurDate  ?? today,
       source: 'Claude AI'
     };
   }
 
   // ── Helpers de UI ─────────────────────────────────────────────────────────────
   function applyRates(data) {
-    rates.bcv      = data.bcv;
-    rates.paralelo = data.paralelo;
+    rates.bcv  = data.bcv;
+    rates.usdt = data.usdt;
+    rates.eur  = data.eur;
 
-    setRateCard('bcvRate', 'bcvDate', data.bcv, data.bcvDate);
-    setRateCard('parRate', 'parDate', data.paralelo, data.parDate);
+    setRateCard('bcvRate',  'bcvDate',  data.bcv,  data.bcvDate);
+    setRateCard('parRate',  'parDate',  data.usdt, data.usdtDate);
+    setRateCard('eurRate',  'eurDate',  data.eur,  data.eurDate);
     updateSpread();
 
-    if (lastUsd !== null) {
-      document.getElementById('usdInput').value = lastUsd;
-      convertFrom('usd');
+    if (lastForeign !== null) {
+      document.getElementById('usdInput').value = lastForeign;
+      convertFrom('foreign');
     }
   }
 
@@ -373,8 +394,8 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
 
   function updateSpread() {
     const el = document.getElementById('spreadValue');
-    if (rates.bcv && rates.paralelo) {
-      const pct = ((rates.paralelo - rates.bcv) / rates.bcv * 100).toFixed(1);
+    if (rates.bcv && rates.usdt) {
+      const pct = ((rates.usdt - rates.bcv) / rates.bcv * 100).toFixed(1);
       el.textContent = `+${pct}%`;
     } else {
       el.textContent = '—';
@@ -382,7 +403,7 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
   }
 
   function setSkeleton(on) {
-    ['bcvRate','parRate'].forEach(id => document.getElementById(id).classList.toggle('skeleton', on));
+    ['bcvRate','parRate','eurRate'].forEach(id => document.getElementById(id).classList.toggle('skeleton', on));
   }
 
   function setUI(state, text) {
@@ -406,25 +427,36 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
     document.getElementById('errNotice').classList.remove('show');
   }
 
+  const modeLabels = { bcv: 'USD', usdt: 'USDT', eur: 'EUR' };
+
   function setMode(m) {
     mode = m;
     document.getElementById('btnBcv').classList.toggle('active', m === 'bcv');
-    document.getElementById('btnPar').classList.toggle('active', m === 'paralelo');
-    if (document.getElementById('usdInput').value) convertFrom('usd');
+    document.getElementById('btnPar').classList.toggle('active', m === 'usdt');
+    document.getElementById('btnEur').classList.toggle('active', m === 'eur');
+    document.getElementById('convFromLabel').textContent = modeLabels[m] ?? 'USD';
+    if (document.getElementById('usdInput').value) convertFrom('foreign');
+  }
+
+  function getActiveRate() {
+    if (mode === 'bcv')  return rates.bcv;
+    if (mode === 'usdt') return rates.usdt;
+    if (mode === 'eur')  return rates.eur;
+    return null;
   }
 
   function convertFrom(from) {
-    const rate = mode === 'bcv' ? rates.bcv : rates.paralelo;
+    const rate = getActiveRate();
     if (!rate) return;
-    if (from === 'usd') {
-      const usd = parseFloat(document.getElementById('usdInput').value);
-      lastUsd = isNaN(usd) ? null : usd;
-      document.getElementById('vesInput').value = isNaN(usd) ? '' : (usd * rate).toFixed(2);
+    if (from === 'foreign') {
+      const val = parseFloat(document.getElementById('usdInput').value);
+      lastForeign = isNaN(val) ? null : val;
+      document.getElementById('vesInput').value = isNaN(val) ? '' : (val * rate).toFixed(2);
     } else {
       const ves = parseFloat(document.getElementById('vesInput').value);
-      const usd = isNaN(ves) ? '' : (ves / rate).toFixed(6);
-      document.getElementById('usdInput').value = usd;
-      lastUsd = isNaN(ves) ? null : parseFloat(usd);
+      const foreign = isNaN(ves) ? '' : (ves / rate).toFixed(6);
+      document.getElementById('usdInput').value = foreign;
+      lastForeign = isNaN(ves) ? null : parseFloat(foreign);
     }
   }
 
@@ -432,7 +464,7 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
     const u = document.getElementById('usdInput');
     const v = document.getElementById('vesInput');
     [u.value, v.value] = [v.value, u.value];
-    if (u.value) convertFrom('usd');
+    if (u.value) convertFrom('foreign');
   }
 
   function nowTime() {
