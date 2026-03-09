@@ -189,11 +189,11 @@
     <div class="conv-row">
       <div class="input-group">
         <div class="input-currency usd" id="convFromLabel">USD</div>
-        <input class="conv-input" id="usdInput" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.00" oninput="convertFrom('foreign')">
+        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('foreign')">
       </div>
       <div class="input-group">
         <div class="input-currency ves">VES</div>
-        <input class="conv-input" id="vesInput" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.00" oninput="convertFrom('ves')">
+        <input class="conv-input" id="vesInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('ves')">
       </div>
     </div>
     <button class="swap-btn" onclick="swapValues()">⇅ Intercambiar</button>
@@ -445,15 +445,20 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
     return null;
   }
 
+  function parseVal(id) {
+    const raw = document.getElementById(id).value.replace(',', '.');
+    return parseFloat(raw);
+  }
+
   function convertFrom(from) {
     const rate = getActiveRate();
     if (!rate) return;
     if (from === 'foreign') {
-      const val = parseFloat(document.getElementById('usdInput').value);
+      const val = parseVal('usdInput');
       lastForeign = isNaN(val) ? null : val;
       document.getElementById('vesInput').value = isNaN(val) ? '' : (val * rate).toFixed(2);
     } else {
-      const ves = parseFloat(document.getElementById('vesInput').value);
+      const ves = parseVal('vesInput');
       const foreign = isNaN(ves) ? '' : (ves / rate).toFixed(6);
       document.getElementById('usdInput').value = foreign;
       lastForeign = isNaN(ves) ? null : parseFloat(foreign);
