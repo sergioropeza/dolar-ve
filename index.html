@@ -189,11 +189,11 @@
     <div class="conv-row">
       <div class="input-group">
         <div class="input-currency usd" id="convFromLabel">USD</div>
-        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('foreign')">
+        <input class="conv-input" id="usdInput" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.00" oninput="convertFrom('foreign')">
       </div>
       <div class="input-group">
         <div class="input-currency ves">VES</div>
-        <input class="conv-input" id="vesInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('ves')">
+        <input class="conv-input" id="vesInput" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.00" oninput="convertFrom('ves')">
       </div>
     </div>
     <button class="swap-btn" onclick="swapValues()">⇅ Intercambiar</button>
