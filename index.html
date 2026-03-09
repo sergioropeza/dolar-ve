@@ -189,11 +189,11 @@
     <div class="conv-row">
       <div class="input-group">
         <div class="input-currency usd" id="convFromLabel">USD</div>
-        <input class="conv-input" id="usdInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('foreign')">
+        <input class="conv-input" id="usdInput" type="text" inputmode="decimal" placeholder="0.00" oninput="convertFrom('foreign')" onchange="convertFrom('foreign')">
       </div>
       <div class="input-group">
         <div class="input-currency ves">VES</div>
-        <input class="conv-input" id="vesInput" type="number" inputmode="decimal" placeholder="0.00" oninput="convertFrom('ves')">
+        <input class="conv-input" id="vesInput" type="text" inputmode="decimal" placeholder="0.00" oninput="convertFrom('ves')" onchange="convertFrom('ves')">
       </div>
     </div>
     <button class="swap-btn" onclick="swapValues()">⇅ Intercambiar</button>
@@ -446,22 +446,29 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
   }
 
   function parseVal(id) {
-    const raw = document.getElementById(id).value.replace(',', '.');
-    return parseFloat(raw);
+    const raw = document.getElementById(id).value;
+    // Normalizar: reemplazar coma por punto
+    const normalized = raw.replace(/,/g, '.');
+    // Si termina en punto (usuario aún escribiendo decimales), no calcular todavía
+    const incomplete = normalized.endsWith('.');
+    const val = parseFloat(normalized);
+    return { incomplete, val };
   }
 
   function convertFrom(from) {
     const rate = getActiveRate();
     if (!rate) return;
     if (from === 'foreign') {
-      const val = parseVal('usdInput');
-      lastForeign = isNaN(val) ? null : val;
-      document.getElementById('vesInput').value = isNaN(val) ? '' : (val * rate).toFixed(2);
+      const { incomplete, val } = parseVal('usdInput');
+      if (incomplete || isNaN(val)) return;
+      lastForeign = val;
+      document.getElementById('vesInput').value = (val * rate).toFixed(2);
     } else {
-      const ves = parseVal('vesInput');
-      const foreign = isNaN(ves) ? '' : (ves / rate).toFixed(6);
+      const { incomplete, val } = parseVal('vesInput');
+      if (incomplete || isNaN(val)) return;
+      const foreign = (val / rate).toFixed(6);
       document.getElementById('usdInput').value = foreign;
-      lastForeign = isNaN(ves) ? null : parseFloat(foreign);
+      lastForeign = parseFloat(foreign);
     }
   }
 
