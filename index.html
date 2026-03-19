@@ -111,6 +111,37 @@
   .swap-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 11px; background: transparent; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
   .swap-btn:active { transform: scale(0.97); color: var(--text); }
 
+  /* Summary panel */
+  .summary-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px 18px; margin-top: 12px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .summary-title {
+    font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+  }
+  .summary-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .summary-label {
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+    color: var(--muted); min-width: 60px;
+  }
+  .summary-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .summary-vals { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+  .summary-val {
+    font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+  }
+  .summary-val.bcv-val { color: var(--bcv-color); }
+  .summary-val.par-val { color: var(--par-color); }
+  .summary-val.eur-val { color: var(--eur-color); }
+  .summary-sep { color: var(--border); font-size: 12px; }
+  .summary-val2 { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+
   .action-bar { display: flex; gap: 10px; margin-top: 20px; animation: fadeUp 0.5s 0.45s ease both; }
   .refresh-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; background: transparent; border: 1px solid var(--border); border-radius: 14px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; }
   .refresh-btn:hover { border-color: var(--bcv-color); color: var(--bcv-color); }
@@ -197,6 +228,35 @@
       </div>
     </div>
     <button class="swap-btn" onclick="swapValues()">⇅ Intercambiar</button>
+  </div>
+
+  <!-- Resumen de equivalencias -->
+  <div class="summary-panel" id="summaryPanel" style="display:none">
+    <div class="summary-title" id="summaryTitle">Equivalencias</div>
+    <div class="summary-row">
+      <div class="summary-label bcv-lbl">
+        <span class="summary-dot" style="background:var(--bcv-color)"></span> BCV
+      </div>
+      <div class="summary-vals">
+        <span class="summary-val bcv-val" id="sumBcvUsd">—</span>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label par-lbl">
+        <span class="summary-dot" style="background:var(--par-color)"></span> USDT
+      </div>
+      <div class="summary-vals">
+        <span class="summary-val par-val" id="sumUsdtUsd">—</span>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label eur-lbl">
+        <span class="summary-dot" style="background:var(--eur-color)"></span> EUR
+      </div>
+      <div class="summary-vals">
+        <span class="summary-val eur-val" id="sumEurUsd">—</span>
+      </div>
+    </div>
   </div>
 
   <div class="action-bar">
@@ -462,14 +522,52 @@ Los valores deben ser números. Si no encuentras alguno usa null.`;
       const { incomplete, val } = parseVal('usdInput');
       if (incomplete || isNaN(val)) return;
       lastForeign = val;
-      document.getElementById('vesInput').value = (val * rate).toFixed(2);
+      const bs = val * rate;
+      document.getElementById('vesInput').value = bs.toFixed(2);
+      updateSummary(bs);
     } else {
       const { incomplete, val } = parseVal('vesInput');
       if (incomplete || isNaN(val)) return;
-      const foreign = (val / rate).toFixed(6);
-      document.getElementById('usdInput').value = foreign;
-      lastForeign = parseFloat(foreign);
+      const foreign = val / rate;
+      document.getElementById('usdInput').value = foreign.toFixed(6);
+      lastForeign = foreign;
+      updateSummary(val);
     }
+  }
+
+  // val = monto en Bolívares (el pivot siempre son los Bs)
+  function updateSummary(bs) {
+    const panel = document.getElementById('summaryPanel');
+    const title = document.getElementById('summaryTitle');
+
+    title.textContent = `${fmtBs(bs)} equivale a:`;
+
+    // BCV: bs / tasa_bcv = USD
+    if (rates.bcv) {
+      const usd = bs / rates.bcv;
+      document.getElementById('sumBcvUsd').textContent = fmtFx(usd, 'USD');
+    }
+
+    // USDT: bs / tasa_usdt = USDT
+    if (rates.usdt) {
+      const usdt = bs / rates.usdt;
+      document.getElementById('sumUsdtUsd').textContent = fmtFx(usdt, 'USDT');
+    }
+
+    // EUR: bs / tasa_eur = EUR
+    if (rates.eur) {
+      const eur = bs / rates.eur;
+      document.getElementById('sumEurUsd').textContent = fmtFx(eur, 'EUR');
+    }
+
+    panel.style.display = 'block';
+  }
+
+  function fmtBs(v) {
+    return v.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Bs';
+  }
+  function fmtFx(v, currency) {
+    return v.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
   }
 
   function swapValues() {
